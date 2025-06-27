@@ -1,0 +1,129 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather App with Suggestions</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #6dd5ed, #2193b0);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding-top: 40px;
+      color: #fff;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+
+    #suggestions {
+      background: #fff;
+      color: #000;
+      border-radius: 5px;
+      max-height: 150px;
+      overflow-y: auto;
+      width: 220px;
+      position: absolute;
+      top: 160px;
+      z-index: 999;
+    }
+
+    .suggestion-item {
+      padding: 8px;
+      cursor: pointer;
+    }
+
+    .suggestion-item:hover {
+      background: #e0e0e0;
+    }
+
+    #weatherBox {
+      margin-top: 20px;
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+  <h1>🌤️ Check Today's Temperature</h1>
+  <div style="position: relative;">
+    <input type="text" id="locationInput" placeholder="Enter city or location" oninput="showSuggestions(this.value)" autocomplete="off" />
+    <div id="suggestions"></div>
+  </div>
+  <button onclick="getWeather()">Get Weather</button>
+
+  <div id="weatherBox"></div>
+
+  <script>
+    const apiKey = '17e01a0938734cfd97643631252706';
+
+    async function showSuggestions(query) {
+      const suggestionsBox = document.getElementById('suggestions');
+      if (query.length < 2) {
+        suggestionsBox.innerHTML = '';
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://api.weatherapi.com/v1/search.json?key=${apiKey}&q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        suggestionsBox.innerHTML = '';
+
+        data.forEach(item => {
+          const div = document.createElement('div');
+          div.classList.add('suggestion-item');
+          div.textContent = `${item.name}, ${item.country}`;
+          div.onclick = () => {
+            document.getElementById('locationInput').value = item.name;
+            suggestionsBox.innerHTML = '';
+          };
+          suggestionsBox.appendChild(div);
+        });
+      } catch (error) {
+        console.error('Suggestion error:', error);
+        suggestionsBox.innerHTML = '';
+      }
+    }
+
+    async function getWeather() {
+      const location = document.getElementById('locationInput').value;
+      const url = `http://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(location)}&aqi=no`;
+      const weatherBox = document.getElementById('weatherBox');
+
+      if (!location) {
+        alert('Please enter a location.');
+        return;
+      }
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        const output = `
+          <h2>${data.location.name}, ${data.location.country}</h2>
+          <p><strong>Temperature:</strong> ${data.current.temp_c}°C</p>
+          <p><strong>Condition:</strong> ${data.current.condition.text}</p>
+          <img src="${data.current.condition.icon}" alt="icon" />
+        `;
+        weatherBox.innerHTML = output;
+      } catch (error) {
+        weatherBox.innerHTML = '<p>⚠️ Error: Unable to fetch weather. Please check the location.</p>';
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
